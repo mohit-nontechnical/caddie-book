@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background: #0A1A0E;
+  background-image: radial-gradient(130% 70% at 50% -5%, #1B4D3E 0%, #0A1A0E 65%);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #fff;
 }
+
+/* Desktop: center the device frame. Mobile: full-bleed app. */
+.cb-stage {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+}
+@media (max-width: 600px) {
+  .cb-stage { padding: 0; align-items: stretch; }
+}
+
+/* Hidden scrollbars on the app scroll container */
+.sc-scroll::-webkit-scrollbar { width: 0; height: 0; }
+.sc-scroll { scrollbar-width: none; }
+
+/* Press / hover micro-interactions */
+.sc-tile, .sc-press {
+  transition: transform 0.12s cubic-bezier(.2,.8,.3,1), filter 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.sc-tile:active, .sc-press:active { transform: scale(0.975); filter: brightness(1.06); }
+.sc-tile:hover { border-color: rgba(240,192,64,0.4) !important; }
+
+@keyframes scShimmer { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes scEnter { from { opacity: 0.4; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes scPush { from { opacity: 0.5; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.sc-view { animation: scEnter 0.32s cubic-bezier(.2,.8,.3,1) both; }
+.sc-overlay { animation: scPush 0.28s cubic-bezier(.2,.8,.3,1) both; }
+@media (prefers-reduced-motion: reduce) { .sc-view, .sc-overlay { animation: none; } }
+
+.sc-tabbtn {
+  background: transparent; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 6px 4px 0; flex: 1; -webkit-tap-highlight-color: transparent;
+}
+.sc-tablabel { font-family: "Inter", sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.01em; }

@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local libSQL database
+caddie.db
+caddie.db-*
+*.db
+*.db-journal
