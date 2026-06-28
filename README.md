@@ -31,7 +31,14 @@ the signals that are actually trustworthy. It never fabricates precision from un
 
 ---
 
-## Run it locally (zero cloud setup)
+## Setup
+
+New to this? **[SETUP.md](SETUP.md)** is a step-by-step guide to getting an OpenRouter key and
+(optionally) a Turso database. It also has a **"do it with Claude Code"** mode — open the folder
+in [Claude Code](https://claude.com/claude-code) and it'll create the database, write your config,
+and start the app for you.
+
+### Quick local start (zero cloud setup)
 
 ```bash
 git clone https://github.com/mohit-nontechnical/caddie-book.git
