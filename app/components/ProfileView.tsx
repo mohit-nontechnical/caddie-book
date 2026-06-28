@@ -1,12 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import { golfer, slots, gradeColor, hexA } from "@/lib/caddie-data";
 import { SLabel } from "./primitives";
 import { IconChevron } from "./icons";
 import { useGrades } from "./GradesContext";
 import { HandicapPanel } from "./HandicapPanel";
 
+const SETTINGS: { label: string; detail: string }[] = [
+  {
+    label: "Connected apps",
+    detail: "Import your rounds from 18Birdies on the Upload tab. More integrations coming.",
+  },
+  {
+    label: "Goal: Break 85",
+    detail: "Your current target. Coach builds your plan around it.",
+  },
+  {
+    label: "Coaching tone",
+    detail: "Coach speaks plain and direct. Tunable tones are coming.",
+  },
+  {
+    label: "Notifications",
+    detail: "Round reminders and weekly insights are coming soon.",
+  },
+];
+
 export const ProfileView = () => {
   const { gradeFor } = useGrades();
+  const [openSetting, setOpenSetting] = useState<number | null>(null);
   const gpaMap: Record<string, number> = { A: 4, B: 3, C: 2, D: 1, F: 0 };
   const gpa = (slots.reduce((a, s) => a + gpaMap[gradeFor(s.id, s.grade)], 0) / slots.length).toFixed(2);
   return (
@@ -46,12 +66,37 @@ export const ProfileView = () => {
 
       <SLabel>Settings</SLabel>
       <div style={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden" }}>
-        {["Connected apps", "Goal: Break 85", "Coaching tone", "Notifications"].map((s, i, arr) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: i < arr.length - 1 ? "1px solid var(--line)" : "none" }}>
-            <span style={{ flex: 1, fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--cream)" }}>{s}</span>
-            <IconChevron size={16} stroke="var(--cream-3)" />
-          </div>
-        ))}
+        {SETTINGS.map((setting, i, arr) => {
+          const isOpen = openSetting === i;
+          return (
+            <div key={i} style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--line)" : "none" }}>
+              <button
+                onClick={() => setOpenSetting(isOpen ? null : i)}
+                className="sc-press"
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "14px 16px",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <span style={{ flex: 1, fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--cream)" }}>{setting.label}</span>
+                <span style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s", flexShrink: 0 }}>
+                  <IconChevron size={16} stroke="var(--cream-3)" />
+                </span>
+              </button>
+              {isOpen && (
+                <div style={{ padding: "0 16px 14px", fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--cream-3)", lineHeight: 1.5 }}>
+                  {setting.detail}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

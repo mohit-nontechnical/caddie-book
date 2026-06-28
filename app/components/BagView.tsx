@@ -3,6 +3,7 @@ import { golfer, slots, drills, gradeColor, hexA, Slot, Drill } from "@/lib/cadd
 import { Trend } from "./primitives";
 import { IconTarget, IconChevron } from "./icons";
 import { useGrades } from "./GradesContext";
+import { PreRoundCard } from "./PreRoundCard";
 
 // ── Grade tile ───────────────────────────────────────────────
 const Tile = ({ slot, intensity, onOpen }: { slot: Slot; intensity: string; onOpen: (s: Slot) => void }) => {
@@ -98,7 +99,7 @@ export const BagView = ({
   onOpenDrill: (d: Drill) => void;
   onUpload: () => void;
 }) => {
-  const focus = slots.find((s) => s.focus)!;
+  const focus = slots.find((s) => s.focus);
   const cols = layout === "list" ? 1 : 2;
   return (
     <div style={{ padding: "0 16px 28px" }}>
@@ -132,7 +133,11 @@ export const BagView = ({
         </div>
       </div>
 
-      <FocusCard slot={focus} drill={drills[focus.drill]} onOpenSlot={onOpenSlot} onOpenDrill={onOpenDrill} />
+      <PreRoundCard />
+
+      {focus && drills[focus.drill] && (
+        <FocusCard slot={focus} drill={drills[focus.drill]} onOpenSlot={onOpenSlot} onOpenDrill={onOpenDrill} />
+      )}
 
       {SECTIONS.map((sec) => (
         <div key={sec.key} style={{ marginTop: 24 }}>

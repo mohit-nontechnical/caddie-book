@@ -18,8 +18,8 @@ export const DrillView = ({
   onToggleDone: () => void;
 }) => {
   const { gradeFor } = useGrades();
-  const slot = slots.find((s) => s.id === drill.slot)!;
-  const grade = gradeFor(slot.id, slot.grade);
+  const slot = slots.find((s) => s.id === drill.slot);
+  const grade = slot ? gradeFor(slot.id, slot.grade) : "C";
   const c = gradeColor(grade);
   return (
     <div style={{ paddingBottom: 30 }}>
@@ -30,10 +30,12 @@ export const DrillView = ({
         <p style={{ margin: "10px 0 0", fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--cream-2)", lineHeight: 1.45 }}>{drill.fixes}</p>
 
         <div style={{ display: "flex", gap: 8, marginTop: 15 }}>
-          <button onClick={() => onOpenSlot(slot)} className="sc-press" style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 999, padding: "6px 12px 6px 7px", cursor: "pointer" }}>
-            <span style={{ width: 22, height: 22, borderRadius: 7, display: "grid", placeItems: "center", background: hexA(c, 0.18), fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: c }}>{grade}</span>
-            <span style={{ fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--cream)", fontWeight: 500 }}>{slot.name}</span>
-          </button>
+          {slot && (
+            <button onClick={() => onOpenSlot(slot)} className="sc-press" style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 999, padding: "6px 12px 6px 7px", cursor: "pointer" }}>
+              <span style={{ width: 22, height: 22, borderRadius: 7, display: "grid", placeItems: "center", background: hexA(c, 0.18), fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: c }}>{grade}</span>
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--cream)", fontWeight: 500 }}>{slot.name}</span>
+            </button>
+          )}
           <span style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 999, padding: "6px 13px", fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--cream-2)" }}>
             <IconClock size={15} stroke="var(--cream-3)" />{drill.dur}
           </span>

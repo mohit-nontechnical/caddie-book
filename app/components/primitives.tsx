@@ -30,10 +30,11 @@ export const Sparkline = ({
   sw?: number;
   dot?: boolean;
 }) => {
+  if (data.length === 0) return <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: "block" }} />;
   const min = Math.min(...data) - 4,
     max = Math.max(...data) + 4;
   const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * (w - 4) + 2;
+    const x = data.length === 1 ? (w - 4) / 2 + 2 : (i / (data.length - 1)) * (w - 4) + 2;
     const y = h - 2 - ((v - min) / (max - min || 1)) * (h - 4);
     return [x, y] as [number, number];
   });

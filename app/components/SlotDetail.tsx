@@ -46,7 +46,7 @@ export const SlotDetail = ({ slot, onBack, onOpenDrill }: { slot: Slot; onBack: 
 
       <div style={{ padding: "0 16px", marginTop: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 9 }}>
-          {slot.stats.map(([label, val, unit], i) => (
+          {(slot.stats ?? []).map(([label, val, unit], i) => (
             <div key={i} style={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 14, padding: "13px 11px" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 500, color: "var(--cream)" }}>{val}</span>
@@ -70,7 +70,7 @@ export const SlotDetail = ({ slot, onBack, onOpenDrill }: { slot: Slot; onBack: 
 
       <div style={{ padding: "0 16px", marginTop: 11 }}>
         <SLabel>Assigned drill</SLabel>
-        <DrillRow drill={drill} onOpen={onOpenDrill} />
+        {drill && <DrillRow drill={drill} onOpen={onOpenDrill} />}
       </div>
     </div>
   );

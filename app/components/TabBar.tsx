@@ -13,7 +13,7 @@ export const TabBar = ({ tab, onTab, gold }: { tab: string; onTab: (t: string) =
   ];
   return (
     <div style={{ flexShrink: 0, position: "relative", zIndex: 40 }}>
-      <div style={{ background: "var(--tabbar)", backdropFilter: "blur(18px) saturate(180%)", WebkitBackdropFilter: "blur(18px) saturate(180%)", borderTop: "1px solid var(--line)", display: "flex", alignItems: "flex-start", padding: "9px 8px 30px" }}>
+      <div style={{ background: "var(--tabbar)", backdropFilter: "blur(18px) saturate(180%)", WebkitBackdropFilter: "blur(18px) saturate(180%)", borderTop: "1px solid var(--line)", display: "flex", alignItems: "flex-start", padding: "9px 8px calc(env(safe-area-inset-bottom, 0px) + 12px)" }}>
         {items.map((it) => {
           if (it.center) {
             const active = tab === "upload";

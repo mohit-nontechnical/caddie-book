@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { getRounds, isCompleteRound } from "@/lib/caddie-store";
+import { getRounds, isCompleteRound, type Round } from "@/lib/caddie-store";
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
@@ -38,6 +38,7 @@ export async function GET() {
         frontBack: null,
         trend: [],
         consistency: { stdev: 0, spread: 0 },
+        mental: null,
       });
     }
 
@@ -143,6 +144,54 @@ export async function GET() {
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((r) => ({ date: r.date.slice(0, 10), score: r.total }));
 
+    // ── Mental game: season-wide bounce-back / tilt ──────────────
+    // After a blow-up hole (score >= 7), did the NEXT hole stay clean (<= 5)?
+    // Dropping another shot right after a blow-up is the classic tilt pattern.
+    // Computed over every blow-up hole that has a following hole.
+    function bouncebackOf(rs: Round[]) {
+      let chances = 0;
+      let recovered = 0; // next hole <= 5 (bogey-or-better on a par 4)
+      let doubledUp = 0; // next hole >= 6 (dropped another shot)
+      let nextTotal = 0;
+      for (const r of rs) {
+        const hs = r.holes.map((h) => h.score);
+        for (let i = 0; i < hs.length - 1; i++) {
+          if (hs[i] >= 7 && typeof hs[i + 1] === "number" && hs[i + 1] > 0) {
+            chances++;
+            nextTotal += hs[i + 1];
+            if (hs[i + 1] <= 5) recovered++;
+            if (hs[i + 1] >= 6) doubledUp++;
+          }
+        }
+      }
+      return { chances, recovered, doubledUp, avgNextHole: chances ? round1(nextTotal / chances) : 0 };
+    }
+
+    const roundsWithHolesM = rounds.filter((r) => r.holes.length >= 18);
+    const bb = bouncebackOf(roundsWithHolesM);
+    // Early vs recent halves (chronological) to show whether it's improving
+    const chrono = [...roundsWithHolesM].sort((a, b) => a.date.localeCompare(b.date));
+    const mid = Math.floor(chrono.length / 2);
+    const earlyBB = bouncebackOf(chrono.slice(0, mid));
+    const recentBB = bouncebackOf(chrono.slice(mid));
+    const recoveredPct = bb.chances ? round1((bb.recovered / bb.chances) * 100) : 0;
+
+    const mental =
+      bb.chances >= 5
+        ? {
+            blowUpHoles: bb.chances,
+            recovered: bb.recovered,
+            recoveredPct, // also the "mental toughness" score 0–100
+            doubledUpPct: round1((bb.doubledUp / bb.chances) * 100),
+            avgNextHole: bb.avgNextHole,
+            tilt: recoveredPct < 50,
+            trend: {
+              early: earlyBB.chances ? round1((earlyBB.recovered / earlyBB.chances) * 100) : null,
+              recent: recentBB.chances ? round1((recentBB.recovered / recentBB.chances) * 100) : null,
+            },
+          }
+        : null;
+
     // Consistency
     const spread = worst - best;
     const sd = round1(stdev(totals));
@@ -164,6 +213,7 @@ export async function GET() {
       frontBack,
       trend,
       consistency: { stdev: sd, spread },
+      mental,
     });
   } catch (e) {
     console.error("[insights]", e);

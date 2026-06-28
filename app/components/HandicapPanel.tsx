@@ -99,7 +99,7 @@ export const HandicapPanel = () => {
               {loading
                 ? "Calculating…"
                 : index != null
-                  ? `Best ${Math.min(8, data!.roundsUsed >= 20 ? 8 : data!.roundsUsed)} of last ${Math.min(20, data!.roundsUsed)} · ${data!.roundsUsed} eligible rounds (${data!.rounds18} × 18-hole${data!.rounds9 > 0 ? `, ${data!.rounds9} × 9-hole` : ""})`
+                  ? `Best ${Math.min(8, (data?.roundsUsed ?? 0) >= 20 ? 8 : (data?.roundsUsed ?? 0))} of last ${Math.min(20, data?.roundsUsed ?? 0)} · ${data?.roundsUsed ?? 0} eligible rounds (${data?.rounds18 ?? 0} × 18-hole${(data?.rounds9 ?? 0) > 0 ? `, ${data?.rounds9} × 9-hole` : ""})`
                   : "Need at least 3 rounds"}
             </div>
           </div>
@@ -136,10 +136,10 @@ export const HandicapPanel = () => {
       {showEditor && data && (
         <div style={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden", marginBottom: 11 }}>
           <div style={{ padding: "11px 14px", borderBottom: "1px solid var(--line)" }}>
-            <SLabel>Course ratings · {data.courses.length}</SLabel>
+            <SLabel>Course ratings · {data.courses?.length ?? 0}</SLabel>
             <div style={{ fontFamily: "var(--font-ui)", fontSize: 11.5, color: "var(--cream-3)", lineHeight: 1.4 }}>Enter the Rating / Slope / Par from the tees you play. Saved values stop being &quot;estimated&quot;.</div>
           </div>
-          {data.courses.map((c) => (
+          {(data.courses ?? []).map((c) => (
             <CourseEditRow key={c.norm} c={c} onSaved={reload} />
           ))}
         </div>

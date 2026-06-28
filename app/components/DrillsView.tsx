@@ -6,7 +6,7 @@ import { useGrades } from "./GradesContext";
 export const DrillsView = ({ onOpenDrill }: { onOpenDrill: (d: Drill) => void; onOpenSlot?: (s: Slot) => void }) => {
   const { gradeFor } = useGrades();
   const list = Object.values(drills);
-  const focusDrill = drills["window"];
+  const focusDrill = drills["window"] ?? list[0];
   return (
     <div style={{ padding: "0 16px 28px" }}>
       <div style={{ padding: "6px 0 18px" }}>
@@ -15,7 +15,7 @@ export const DrillsView = ({ onOpenDrill }: { onOpenDrill: (d: Drill) => void; o
         <p style={{ margin: "7px 0 0", fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--cream-3)", lineHeight: 1.4 }}>Each drill feeds one bag slot. Coach pins the right one to your weakest week.</p>
       </div>
 
-      <div onClick={() => onOpenDrill(focusDrill)} className="sc-press" style={{ cursor: "pointer", position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid " + hexA("#F0C040", 0.45), background: "linear-gradient(160deg, " + hexA("#F0C040", 0.16) + ", transparent 65%), var(--panel)", padding: "18px", marginBottom: 22 }}>
+      {focusDrill && <div onClick={() => onOpenDrill(focusDrill)} className="sc-press" style={{ cursor: "pointer", position: "relative", borderRadius: 20, overflow: "hidden", border: "1px solid " + hexA("#F0C040", 0.45), background: "linear-gradient(160deg, " + hexA("#F0C040", 0.16) + ", transparent 65%), var(--panel)", padding: "18px", marginBottom: 22 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
           <IconSpark size={15} stroke="var(--gold)" />
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: "0.16em", color: "var(--gold)", whiteSpace: "nowrap" }}>DRILL OF THE WEEK</span>
@@ -27,13 +27,13 @@ export const DrillsView = ({ onOpenDrill }: { onOpenDrill: (d: Drill) => void; o
           <span>·</span>
           <span>Feeds Approach 100–150</span>
         </div>
-      </div>
+      </div>}
 
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.16em", color: "var(--cream-3)", margin: "0 2px 11px" }}>ALL DRILLS · {list.length}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         {list.map((d) => {
-          const slot = slots.find((s) => s.id === d.slot)!;
-          const grade = gradeFor(slot.id, slot.grade);
+          const slot = slots.find((s) => s.id === d.slot);
+          const grade = slot ? gradeFor(slot.id, slot.grade) : "C";
           const c = gradeColor(grade);
           return (
             <button key={d.id} onClick={() => onOpenDrill(d)} className="sc-tile" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 15, padding: "13px 14px" }}>

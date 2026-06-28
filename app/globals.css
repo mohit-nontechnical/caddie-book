@@ -12,16 +12,32 @@ body {
   color: #fff;
 }
 
-/* Desktop: center the device frame. Mobile: full-bleed app. */
+/* Mobile: full-bleed app. Desktop: centered phone-width column (no fake bezel). */
 .cb-stage {
   min-height: 100dvh;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  padding: 28px 16px;
+  padding: 0;
 }
-@media (max-width: 600px) {
-  .cb-stage { padding: 0; align-items: stretch; }
+
+/* The app shell. Full viewport on phones; a centered card on larger screens. */
+.cb-frame {
+  width: 100%;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 601px) {
+  .cb-stage { padding: 24px 16px; align-items: center; }
+  .cb-frame {
+    width: 420px;
+    height: min(900px, calc(100dvh - 48px));
+    border-radius: 40px;
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.15);
+  }
 }
 
 /* Hidden scrollbars on the app scroll container */

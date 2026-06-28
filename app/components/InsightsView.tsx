@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sparkline, SLabel } from "./primitives";
+import { SLabel } from "./primitives";
 import { FeedView } from "./FeedView";
+import { StrokesGained } from "./StrokesGained";
+import { ScoreTrendChart, ScoreDistChart } from "./ChartsLazy";
 import { hexA } from "@/lib/caddie-data";
 import type { Slot } from "@/lib/caddie-data";
 
@@ -30,6 +32,15 @@ interface InsightsData {
   frontBack: { front: number; back: number; diff: number; backWorsePct: number } | null;
   trend: { date: string; score: number }[];
   consistency: { stdev: number; spread: number };
+  mental: {
+    blowUpHoles: number;
+    recovered: number;
+    recoveredPct: number;
+    doubledUpPct: number;
+    avgNextHole: number;
+    tilt: boolean;
+    trend: { early: number | null; recent: number | null };
+  } | null;
 }
 
 function fmt1(n: number | null | undefined): string {
@@ -45,7 +56,7 @@ function frontBackCaption(fb: InsightsData["frontBack"]): string {
   return `Your front nine costs you ${fmt1(-fb.diff)} strokes on average — you warm up slowly but finish strong.`;
 }
 
-export const InsightsView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) => {
+export const InsightsView = ({ onOpenSlot, onOpenChat }: { onOpenSlot: (s: Slot) => void; onOpenChat?: () => void }) => {
   const [data, setData] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -105,15 +116,10 @@ export const InsightsView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) 
     );
   }
 
-  const { rounds18, avg, best, worst, holeDist, bigHolePct, gapToGoal, frontBack, trend, consistency } = data;
+  const { rounds18, avg, best, worst, holeDist, bigHolePct, gapToGoal, frontBack, trend, consistency, mental } = data;
 
-  // Sparkline data: invert scores (lower score = higher line)
-  const sparkData = trend.map((t) => 130 - t.score);
   const trendBest = best ?? 0;
   const trendWorst = worst ?? 0;
-
-  // Max pct for bar scaling
-  const maxPct = Math.max(...holeDist.map((d) => d.pct), 1);
 
   return (
     <div style={{ padding: "0 16px 28px" }}>
@@ -127,6 +133,18 @@ export const InsightsView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) 
         </p>
       </div>
 
+      {/* ── Ask Coach ── */}
+      {onOpenChat && (
+        <button onClick={onOpenChat} className="sc-press" style={{ width: "100%", marginBottom: 14, cursor: "pointer", borderRadius: 16, padding: "13px 16px", border: "1px solid " + hexA("#F0C040", 0.4), background: "linear-gradient(160deg, " + hexA("#F0C040", 0.1) + ", transparent), var(--panel)", display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
+          <span style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, background: hexA("#F0C040", 0.16), display: "grid", placeItems: "center", fontSize: 17 }}>💬</span>
+          <span style={{ flex: 1 }}>
+            <span style={{ display: "block", fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 700, color: "var(--cream)" }}>Ask Coach anything</span>
+            <span style={{ display: "block", fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--cream-3)", marginTop: 1 }}>&ldquo;Why do I blow up after a bad hole?&rdquo;</span>
+          </span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--cream-3)" }}>›</span>
+        </button>
+      )}
+
       {/* ── HERO: Blow-up holes ── */}
       <section style={{ marginBottom: 14, borderRadius: 18, background: "var(--panel)", border: "1px solid var(--line)", padding: "16px 16px 18px", overflow: "hidden" }}>
         <SLabel>Blow-up holes</SLabel>
@@ -134,26 +152,13 @@ export const InsightsView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) 
           <span style={{ color: "var(--bad)" }}>{fmt1(bigHolePct)}%</span> of your holes are a 7 or worse.
         </p>
 
-        {/* Bar chart */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {holeDist.map((d) => {
-            const isBig = d.score === "7" || d.score === "8" || d.score === "9+";
-            const barColor = isBig ? "var(--bad)" : "var(--gold)";
-            const barPct = (d.pct / maxPct) * 100;
-            return (
-              <div key={d.score} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: isBig ? "var(--bad)" : "var(--cream-3)", width: 22, textAlign: "right", flexShrink: 0 }}>{d.score}</span>
-                <div style={{ flex: 1, height: isBig ? 16 : 12, borderRadius: 4, background: hexA(isBig ? "#C05C5C" : "#F0C040", 0.12), overflow: "hidden" }}>
-                  <div style={{ width: barPct + "%", height: "100%", background: barColor, borderRadius: 4, transition: "width 0.4s ease" }} />
-                </div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--cream-3)", width: 38, flexShrink: 0 }}>{d.pct}%</span>
-              </div>
-            );
-          })}
+        {/* Distribution chart (interactive) */}
+        <div data-noswipe style={{ margin: "0 -6px" }}>
+          <ScoreDistChart data={holeDist} />
         </div>
 
-        <p style={{ margin: "14px 0 0", fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--cream-3)", lineHeight: 1.45 }}>
-          Turning those into 5s and 6s is your fastest path to Break 85.
+        <p style={{ margin: "10px 0 0", fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--cream-3)", lineHeight: 1.45 }}>
+          Tap a bar for the count. Turning those 7s into 5s and 6s is your fastest path to Break 85.
         </p>
       </section>
 
@@ -187,19 +192,22 @@ export const InsightsView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) 
         </p>
       </section>
 
+      {/* ── STROKES GAINED ── */}
+      <StrokesGained />
+
       {/* ── TREND ── */}
       {trend.length >= 3 && (
         <section style={{ marginBottom: 14, borderRadius: 18, background: "var(--panel)", border: "1px solid var(--line)", padding: "16px 16px 18px" }}>
           <SLabel>Score trend</SLabel>
-          <div style={{ position: "relative" }}>
-            <Sparkline data={sparkData} color="var(--gold)" w={280} h={52} sw={2.2} />
+          <div data-noswipe style={{ margin: "4px -6px 0" }}>
+            <ScoreTrendChart data={trend} />
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--good)" }}>Best {trendBest}</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--cream-3)" }}>{trend.length} rounds</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--bad)" }}>Worst {trendWorst}</span>
           </div>
-          <p style={{ margin: "8px 0 0", fontFamily: "var(--font-ui)", fontSize: 11.5, color: "var(--cream-3)", lineHeight: 1.4 }}>Line goes up as score improves — lower is better in golf.</p>
+          <p style={{ margin: "8px 0 0", fontFamily: "var(--font-ui)", fontSize: 11.5, color: "var(--cream-3)", lineHeight: 1.4 }}>Tap a point for that round. Axis is flipped so up = a better (lower) score.</p>
         </section>
       )}
 
@@ -230,6 +238,43 @@ export const InsightsView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) 
           </p>
         </section>
       )}
+
+      {/* ── MENTAL GAME / TILT ── */}
+      {mental && (() => {
+        const score = mental.recoveredPct;
+        const scoreColor = score < 50 ? "#C05C5C" : score >= 60 ? "#4CAF82" : "#F0C040";
+        const { early, recent } = mental.trend;
+        const delta = early != null && recent != null ? Math.round((recent - early) * 10) / 10 : null;
+        return (
+          <section style={{ marginBottom: 14, borderRadius: 18, background: "var(--panel)", border: "1px solid " + hexA(scoreColor, 0.35), padding: "16px 16px 18px" }}>
+            <SLabel>Mental game · bounce-back</SLabel>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, margin: "6px 0 12px" }}>
+              <div style={{ textAlign: "center", flexShrink: 0 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 700, color: scoreColor, lineHeight: 1 }}>{Math.round(score)}<span style={{ fontSize: 20 }}>%</span></div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--cream-3)", marginTop: 4 }}>RECOVERED</div>
+              </div>
+              <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--cream-2)", lineHeight: 1.5 }}>
+                After your <b style={{ color: "var(--cream)" }}>{mental.blowUpHoles} blow-up holes</b>, you kept the next hole clean (bogey or better) <b style={{ color: scoreColor }}>{mental.recovered}</b> times — and dropped another shot <b style={{ color: "var(--bad)" }}>{Math.round(mental.doubledUpPct)}%</b> of the time.
+              </p>
+            </div>
+            {delta != null && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--cream-3)" }}>Early {early}%</span>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--cream-3)" }}>→</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--cream-3)" }}>Recent {recent}%</span>
+                <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: delta >= 0 ? "var(--good)" : "var(--bad)" }}>
+                  {delta > 0 ? "+" : ""}{delta} {delta >= 3 ? "↑ tougher" : delta <= -3 ? "↓ slipping" : "steady"}
+                </span>
+              </div>
+            )}
+            <p style={{ margin: "12px 0 0", fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--cream-3)", lineHeight: 1.45 }}>
+              {mental.tilt
+                ? "One bad hole is becoming two. After a blow-up, reset to a bogey target and just stop the bleeding — that alone is worth strokes."
+                : "Solid recovery instinct. Protecting the hole after a blow-up is the cheapest scoring you'll find."}
+            </p>
+          </section>
+        );
+      })()}
 
       {/* ── CONSISTENCY ── */}
       <section style={{ marginBottom: 22, borderRadius: 18, background: "var(--panel)", border: "1px solid var(--line)", padding: "16px 16px 18px" }}>
