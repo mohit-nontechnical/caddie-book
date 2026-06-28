@@ -1,78 +1,129 @@
-# Caddie Book by Mo
+# Caddie Book
 
-Your AI caddie — learns your game from scorecards and swing clips, grades every "slot"
-in your bag, and assigns the one drill that fixes the most strokes.
+**The after-the-round coach that sits on top of [18Birdies](https://18birdies.com).**
 
-Built with Next.js 16 (App Router) + React 19 + Tailwind 4, with AI via OpenRouter.
+You already score your rounds in 18Birdies (free). Caddie Book imports that data and answers
+the one question 18Birdies/Arccos charge a premium for: *what's costing me strokes, and what do
+I do about it?*
 
-## Run it
+It does **not** try to replace 18Birdies. No on-course scoring, no GPS, no double entry. You
+play, export your data once, drop the file in, and get premium-grade post-round analysis on the
+rounds you already have.
+
+Built with Next.js 16 (App Router) + React 19 + Tailwind 4, with AI via [OpenRouter](https://openrouter.ai).
+
+---
+
+## What you get
+
+- **Insights** — blow-up-hole map, gap-to-goal, scoring trend, front/back split, consistency.
+- **Strokes Gained: Total** — honest, course-difficulty-adjusted (no shot-tracking needed):
+  where you leak strokes vs. the difficulty of each course.
+- **Mental game / tilt score** — after a blow-up hole, how often does the next hole stay clean?
+  Plus a pre-round routine and a per-round bounce-back read.
+- **Coach** — an AI coach grounded in your real numbers (avg, double-bogey rate, tilt, per-course
+  patterns), with a damage-control plan that tracks whether you're improving.
+- **Ask Coach anything** — chat about your own game ("which course is hardest", "why do I blow up").
+- **WHS handicap engine**, per-hole scorecards, course ranking, and a course map.
+
+Every insight is built on **scoring data only** (per-hole scores, totals, distribution, handicap) —
+the signals that are actually trustworthy. It never fabricates precision from unreliable stats.
+
+---
+
+## Run it locally (zero cloud setup)
 
 ```bash
+git clone https://github.com/mohit-nontechnical/caddie-book.git
+cd caddie-book
 npm install
-echo "OPENROUTER_API_KEY=sk-or-..." > .env.local   # get a key at https://openrouter.ai/keys
+cp .env.example .env.local        # then paste your OpenRouter key into it
 npm run dev
 ```
 
-Open http://localhost:3000 (or the port printed in the terminal).
+Open the URL printed in the terminal. Rounds are stored in a local `caddie.db` SQLite file
+(created automatically, gitignored) — no database account needed.
 
-> Without a key the UI works fully — use the **"Try a demo parse"** button on the Upload
-> tab to see the flow. Real scorecard parsing needs the key.
+> Without an OpenRouter key the UI still works — use the demo buttons to see the flow.
+> The AI features (coach, scorecard OCR) need a free key from https://openrouter.ai/keys.
 
-## Responsive
+---
 
-- **Phone (<600px):** full-bleed native-style app.
-- **Desktop (≥600px):** the app centered inside an iOS device frame.
+## Deploy your own copy (recommended for sharing)
 
-## Structure
+Caddie Book is **single-user by design** — one deployment holds one golfer's data. To share it
+with friends, each person runs **their own copy** so everyone's rounds stay private and separate.
+Don't have your friends type into your live URL; they'd share your database.
+
+One-click deploy (you'll be prompted for the env vars below):
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmohit-nontechnical%2Fcaddie-book&env=OPENROUTER_API_KEY,TURSO_DATABASE_URL,TURSO_AUTH_TOKEN,APP_PASSCODE&envDescription=OpenRouter%20key%20for%20AI%2C%20a%20free%20Turso%20DB%20for%20cloud%20storage%2C%20and%20a%20passcode%20to%20lock%20your%20app&envLink=https%3A%2F%2Fgithub.com%2Fmohit-nontechnical%2Fcaddie-book%23environment-variables)
+
+On Vercel you **must** use Turso (the filesystem is read-only, so the local-file fallback won't
+persist). A free Turso DB takes two minutes to create. Local dev does not need Turso.
+
+### Environment variables
+
+| Variable | Required? | What it is |
+|----------|-----------|------------|
+| `OPENROUTER_API_KEY` | for AI features | Free key from https://openrouter.ai/keys |
+| `TURSO_DATABASE_URL` | for cloud deploy | Free DB from https://turso.tech (`libsql://…`) |
+| `TURSO_AUTH_TOKEN` | for cloud deploy | Auth token from the same Turso DB |
+| `APP_PASSCODE` | optional | Locks the app behind a passcode. Unset = no gate (fine for local). |
+
+See [`.env.example`](.env.example) for the template.
+
+---
+
+## Get your data in (the front door)
+
+18Birdies has no CSV/API export, but its **Download Your Account Data**
+(https://18birdies.com/download-account-data/) emails you a JSON archive of every round.
+
+1. Request the download from 18Birdies and grab the JSON file.
+2. Open Caddie Book → **Upload** tab → the **18Birdies** tile → pick the file.
+3. It bulk-imports every round. Re-importing later is **idempotent** — it only adds what's new,
+   so this is your ongoing re-sync, not a one-time migration.
+
+Play more rounds in 18Birdies → re-export → drop it in. That's the whole loop.
+
+---
+
+## How it's built
 
 ```
 app/
-  page.tsx                 # mounts the app
-  layout.tsx               # fonts + metadata
-  components/              # all UI (ported from the HTML prototype)
+  page.tsx                  # mounts the app
+  layout.tsx                # fonts + PWA metadata
+  components/               # all UI (responsive mobile web app)
   api/
-    parse-round/           # scorecard image → structured hole JSON (Haiku vision)
-    analyze-swing/         # swing frames → coaching note (Sonnet vision)
-    coach/                 # round history → patterns + grades (Sonnet)
+    import-18birdies/       # 18Birdies JSON archive → rounds (idempotent)
+    insights/               # scoring-pattern analysis + season tilt
+    strokes-gained/         # course-adjusted Strokes Gained: Total
+    debrief/                # per-round debrief after an import
+    preround/               # pre-round mental routine
+    coach/                  # round history → patterns, grades, tracked plan
+    coach-chat/             # conversational coach grounded in your numbers
+    handicap/ rounds/ courses/ stats/ grades/
+    parse-round/            # (bonus) scorecard photo → holes via vision OCR
+    analyze-swing/          # (bonus) swing frames → coaching note
 lib/
-  openrouter.ts            # OpenRouter chat client + JSON/vision helpers
-  caddie-data.ts           # domain data, themes, grade colors
-  caddie-store.ts          # round persistence via libSQL (local file or Turso cloud)
+  import-18birdies.ts       # 18Birdies archive mapper
+  caddie-store.ts           # round persistence via libSQL (local file or Turso cloud)
+  handicap.ts               # WHS handicap engine
+  course-ratings.ts         # course rating/slope data
+  openrouter.ts             # OpenRouter chat client + JSON/vision helpers
 ```
 
-## Storage (libSQL / Turso)
-
-Rounds are stored in a SQLite-compatible libSQL database. The same code runs two ways:
-
-| Mode | Setup | Notes |
-|------|-------|-------|
-| **Local dev** | nothing — defaults to a `caddie.db` file | Created automatically, gitignored |
-| **Free cloud** | set `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` | Create a free DB at https://turso.tech |
-
-Parsing a scorecard (`/api/parse-round`) persists the round; `/api/coach` reads round
-history back out. Switching from local to cloud is purely an env-var change — no code edits.
-
-## Importing 18Birdies history
-
-18Birdies has no CSV/API export, but its **Download Your Account Data** feature
-(https://18birdies.com/download-account-data/) emails you a JSON archive. Drop that file on
-the Upload tab via the **"18Birdies"** tile and it bulk-imports every round (idempotent —
-re-importing won't duplicate). It maps per-hole scores + per-round aggregate stats (GIR,
-putts, fairways) into the `rounds` table; Coach then analyzes your real history.
-
-## Models (via OpenRouter)
+### Models (via OpenRouter)
 
 | Task | Model | Why |
 |------|-------|-----|
-| Parse scorecard | `google/gemini-2.5-flash` | robust, cheap vision OCR |
-| Analyze swing | `google/gemini-2.5-flash` | forgiving image handling |
-| Patterns / grades | `anthropic/claude-sonnet-4.5` | multi-round synthesis (text) |
+| Vision (scorecard OCR, swing) | `google/gemini-2.5-flash` | robust, cheap vision |
+| Coach / patterns / chat | `anthropic/claude-sonnet-4.5` | multi-round synthesis |
 
-> `anthropic/claude-3.5-haiku` is **not** usable for vision on OpenRouter — it only routes
-> to Amazon Bedrock, which rejects image input despite metadata claiming support.
+---
 
-## Deploy
+## License
 
-`vercel deploy`, then set `OPENROUTER_API_KEY`, `TURSO_DATABASE_URL`, and
-`TURSO_AUTH_TOKEN` in the project's env vars. With Turso configured, persistence works
-on Vercel's read-only filesystem (the local-file fallback would not).
+MIT — see [LICENSE](LICENSE). Built for fun. Not affiliated with 18Birdies.
