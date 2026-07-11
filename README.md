@@ -12,7 +12,7 @@ rounds you already have.
 
 Built with Next.js 16 (App Router) + React 19 + Tailwind 4, with AI via [OpenRouter](https://openrouter.ai).
 
-<!-- TODO: add a real screenshot at docs/screenshot.png -->
+![Caddie Book: Bag & Drills view with per-club grades and drills](docs/screenshot.png)
 
 ---
 
