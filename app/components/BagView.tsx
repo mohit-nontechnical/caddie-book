@@ -1,9 +1,10 @@
 import React from "react";
-import { golfer, slots, drills, gradeColor, hexA, Slot, Drill } from "@/lib/caddie-data";
+import { slots, drills, gradeColor, hexA, Slot, Drill } from "@/lib/caddie-data";
 import { Trend } from "./primitives";
 import { IconTarget, IconChevron } from "./icons";
 import { useGrades } from "./GradesContext";
 import { PreRoundCard } from "./PreRoundCard";
+import { useLiveGolfer } from "./useLiveGolfer";
 
 // ── Grade tile ───────────────────────────────────────────────
 const Tile = ({ slot, intensity, onOpen }: { slot: Slot; intensity: string; onOpen: (s: Slot) => void }) => {
@@ -101,6 +102,7 @@ export const BagView = ({
 }) => {
   const focus = slots.find((s) => s.focus);
   const cols = layout === "list" ? 1 : 2;
+  const live = useLiveGolfer();
   return (
     <div style={{ padding: "0 16px 28px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0 16px" }}>
@@ -119,16 +121,20 @@ export const BagView = ({
         <div style={{ flex: 1, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 14, padding: "11px 14px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: "0.14em", color: "var(--cream-3)" }}>HANDICAP INDEX</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 3 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--cream)" }}>{golfer.index}</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--good)" }}>
-              <Trend dir="up" size={8} />{golfer.trend}
-            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--cream)" }}>{live.index ?? (live.loading ? "…" : "—")}</span>
+            {live.delta && live.deltaDir && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontFamily: "var(--font-mono)", fontSize: 11, color: live.deltaDir === "up" ? "var(--good)" : live.deltaDir === "down" ? "var(--bad)" : "var(--cream-3)" }}>
+                <Trend dir={live.deltaDir} size={8} />{live.delta}
+              </span>
+            )}
           </div>
         </div>
         <div style={{ flex: 1, background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 14, padding: "11px 14px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: "0.14em", color: "var(--cream-3)" }}>LAST 5 ROUNDS</div>
           <div style={{ display: "flex", alignItems: "center", marginTop: 4 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--cream-2)", letterSpacing: "0.05em" }}>{golfer.lastFive.join("  ")}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--cream-2)", letterSpacing: "0.05em" }}>
+              {live.lastFive.length > 0 ? live.lastFive.join("  ") : live.loading ? "…" : "No rounds yet"}
+            </span>
           </div>
         </div>
       </div>

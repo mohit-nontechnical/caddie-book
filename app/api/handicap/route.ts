@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { getRounds, getCourseRatingOverrides, isCompleteRound } from "@/lib/caddie-store";
-import { seedFor, normCourse } from "@/lib/course-ratings";
-import { computeHandicap, type RatedRound } from "@/lib/handicap";
+import { getRounds, getCourseRatingOverrides } from "@/lib/caddie-store";
+import { normCourse } from "@/lib/course-ratings";
+import { computeHandicap } from "@/lib/handicap";
+import { makeResolver, buildRatedRounds } from "@/lib/live-handicap";
 
 export const runtime = "nodejs";
 
@@ -15,46 +16,12 @@ export async function GET(req: Request) {
 
     const rounds = await getRounds(200);
     const overrides = await getCourseRatingOverrides();
+    const resolve = makeResolver(overrides);
 
-    const resolve = (course: string) => {
-      const norm = normCourse(course);
-      const ov = overrides[norm];
-      const seed = seedFor(course);
-      return {
-        rating: ov?.rating ?? seed.rating,
-        slope: ov?.slope ?? seed.slope,
-        par: ov?.par ?? seed.par,
-        estimated: ov ? false : seed.estimated,
-      };
-    };
-
-    // 18-hole rounds always drive the index.
-    // Abandoned/invalid rounds are excluded — an implausible total would corrupt
-    // the index since WHS averages your *lowest* differentials.
-    const eighteen = rounds.filter(
-      (r) => (r.stats?.holeCount ?? r.holes.length) >= 18 && r.total > 0 && isCompleteRound(r)
-    );
-    const rated: RatedRound[] = eighteen.map((r) => {
-      const res = resolve(r.course);
-      const holeCount = r.stats?.holeCount ?? r.holes.length;
-      return { date: r.date, course: r.course, score: r.total, rating: res.rating, slope: res.slope, estimated: res.estimated, holeCount };
-    });
-
-    // Optionally include 9-hole rounds using the doubling approximation
-    // (see lib/handicap.ts for the WHS math rationale).
-    if (include9) {
-      const nine = rounds.filter((r) => {
-        const hc = r.stats?.holeCount ?? r.holes.length;
-        return hc >= 9 && hc < 18 && r.total > 0 && isCompleteRound(r);
-      });
-      for (const r of nine) {
-        const res = resolve(r.course);
-        const holeCount = r.stats?.holeCount ?? r.holes.length;
-        rated.push({ date: r.date, course: r.course, score: r.total, rating: res.rating, slope: res.slope, estimated: res.estimated, holeCount });
-      }
-    }
-
-    const result = computeHandicap(rated);
+    // Rated-round building (18-hole always; 9-hole via doubling approximation
+    // when include9) lives in lib/live-handicap so the coach routes and this
+    // route always agree on the index.
+    const result = computeHandicap(buildRatedRounds(rounds, resolve, include9));
 
     // Course summary for the ratings editor (all distinct courses played).
     const counts = new Map<string, { name: string; rounds18: number }>();

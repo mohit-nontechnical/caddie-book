@@ -130,7 +130,8 @@ export const DesktopProfile: React.FC = () => {
   const recent20 = (handicap.data?.recent20 as DiffRow[] | undefined) ?? [];
   const trendChrono = useMemo(() => [...recent20].reverse(), [recent20]);
   const trendData = trendChrono.map((r) => 40 - r.differential);
-  const trendLabels = trendChrono.map((r) => new Date(r.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+  // Dates may be date-only ("2026-07-10") or full ISO timestamps — only pad date-only ones.
+  const trendLabels = trendChrono.map((r) => new Date(r.date + (r.date.length <= 10 ? "T12:00:00" : "")).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
 
   // types.ts declares estimatedCourses as a count (number), but the real
   // /api/handicap route returns the estimated course *names* (string[]) —
@@ -139,6 +140,13 @@ export const DesktopProfile: React.FC = () => {
   const estimatedCoursesRaw = handicap.data?.estimatedCourses as number | string[] | undefined;
   const estCount = Array.isArray(estimatedCoursesRaw) ? estimatedCoursesRaw.length : estimatedCoursesRaw ?? 0;
   const courses: HandicapCourseRow[] = handicap.data?.courses ?? [];
+
+  // Home course = most-played course (stats courses are the full history;
+  // handicap courses are sorted by 18-hole rounds as a fallback).
+  const homeCourse =
+    [...(stats.data?.courses ?? [])].sort((a, b) => b.rounds - a.rounds)[0]?.name ??
+    courses[0]?.name ??
+    null;
 
   return (
     <div style={{ maxWidth: 860 }}>
@@ -166,7 +174,7 @@ export const DesktopProfile: React.FC = () => {
         <div>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 600, color: "#1B2A1D" }}>{golfer.name}</div>
           <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13.5, color: "rgba(34,49,36,0.6)", marginTop: 3 }}>
-            {golfer.home}
+            {homeCourse ?? (anyLoading ? "…" : "No rounds yet")}
             {totalRounds > 0 ? ` · ${totalRounds} round${totalRounds === 1 ? "" : "s"} tracked` : ""}
           </div>
         </div>
@@ -325,7 +333,7 @@ export const DesktopProfile: React.FC = () => {
                 }}
               >
                 <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: "rgba(34,49,36,0.5)", width: 76, flexShrink: 0 }}>
-                  {new Date(r.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {new Date(r.date + (r.date.length <= 10 ? "T12:00:00" : "")).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
                 <span style={{ flex: 1, minWidth: 0, fontFamily: "'DM Sans',sans-serif", fontSize: 13.5, color: "#1B2A1D", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {r.course}

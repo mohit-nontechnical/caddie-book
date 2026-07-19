@@ -3,6 +3,7 @@ import { callClaude, parseJsonLoose, MODELS } from "@/lib/openrouter";
 import { getRounds, saveGrades, isCompleteRound, savePlan, loadPlan } from "@/lib/caddie-store";
 import type { CoachPlan, Round } from "@/lib/caddie-store";
 import { slots, golfer } from "@/lib/caddie-data";
+import { getLiveHandicap } from "@/lib/live-handicap";
 
 interface CoachOut {
   slotGrades?: { id: string; grade: string }[];
@@ -67,6 +68,14 @@ export async function POST(req: NextRequest) {
 
     const gapTo85 = n > 0 ? r1(avg - 85) : null;
 
+    // Live handicap index — never quote the static seed value to the model.
+    let liveIndex: number | null = null;
+    try {
+      liveIndex = (await getLiveHandicap({ rounds: allRounds })).index;
+    } catch (e) {
+      console.error("coach: live handicap failed, omitting index", e);
+    }
+
     // ── Prompt ─────────────────────────────────────────────────
     const slotSummary = slots.map((s) => ({
       id: s.id,
@@ -93,7 +102,7 @@ focusDrill, and the plan on DAMAGE CONTROL and COURSE MANAGEMENT strategies to c
 Focus weeklyInsight, focusDrill, and plan on blow-up hole prevention as the most
 common amateur leak.`;
 
-    const prompt = `You are "Coach", the AI caddie for ${golfer.name} (handicap ${golfer.index}, goal: ${golfer.goal}).
+    const prompt = `You are "Coach", the AI caddie for ${golfer.name} (${liveIndex != null ? `handicap ${liveIndex.toFixed(1)}` : "handicap not yet rated"}, goal: ${golfer.goal}).
 Analyze the player's recent rounds and current bag-slot grades, then surface plain-English patterns.
 
 CURRENT BAG SLOTS:

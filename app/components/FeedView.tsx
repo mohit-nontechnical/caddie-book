@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { slots, patterns as seedPatterns, golfer, gradeColor, hexA, Slot, Pattern } from "@/lib/caddie-data";
+import { slots, patterns as seedPatterns, gradeColor, hexA, Slot, Pattern } from "@/lib/caddie-data";
 import { IconSpark } from "./icons";
 import { useGrades } from "./GradesContext";
+import { useLiveGolfer } from "./useLiveGolfer";
 
 const PatternCard = ({ pattern, onOpen, compact }: { pattern: Pattern; onOpen: () => void; compact?: boolean }) => {
   const { gradeFor } = useGrades();
@@ -48,6 +49,7 @@ const EXCLUDE_KEY = "caddie:excludePartial";
 
 export const FeedView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) => {
   const { applyGrades, hasOverrides, reset } = useGrades();
+  const live = useLiveGolfer();
   const [loading, setLoading] = useState(false);
   const [coach, setCoach] = useState<CoachResult | null>(null);
   const [err, setErr] = useState("");
@@ -156,7 +158,13 @@ export const FeedView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) => {
       <div style={{ padding: "6px 0 18px" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: "0.2em", color: "var(--cream-3)" }}>PATTERN FEED</div>
         <h1 style={{ margin: "3px 0 0", fontFamily: "var(--font-display)", fontSize: 29, fontWeight: 600, color: "var(--cream)", letterSpacing: "-0.015em" }}>What Coach noticed</h1>
-        <p style={{ margin: "7px 0 0", fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--cream-3)", lineHeight: 1.4 }}>Plain-English insights after your last {golfer.rounds} rounds.</p>
+        <p style={{ margin: "7px 0 0", fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--cream-3)", lineHeight: 1.4 }}>
+          {(() => {
+            // Prefer the count Coach actually analyzed; fall back to live round count.
+            const n = coach?.roundsAnalyzed ?? (live.loading ? null : live.totalRounds);
+            return n ? `Plain-English insights after your last ${n} rounds.` : "Plain-English insights from your rounds.";
+          })()}
+        </p>
       </div>
 
       <button onClick={toggleExclude} className="sc-press" style={{ width: "100%", marginBottom: 12, borderRadius: 12, padding: "11px 13px", cursor: "pointer", border: "1px solid var(--line)", background: "var(--panel)", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>

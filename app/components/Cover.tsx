@@ -1,7 +1,19 @@
+"use client";
+
 import React from "react";
 import { DeviceFrame } from "./DeviceFrame";
+import { useLiveGolfer } from "./useLiveGolfer";
 
 export function Cover({ onEnter }: { onEnter: () => void }) {
+  const live = useLiveGolfer();
+  const statLine = live.loading
+    ? " " // keep the line height while loading, no stale numbers
+    : [
+        live.index ? `HANDICAP ${live.index}` : null,
+        live.totalRounds > 0 ? `${live.totalRounds} ROUND${live.totalRounds === 1 ? "" : "S"}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || "NO ROUNDS YET";
   return (
     <DeviceFrame dark>
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(170deg, #1B4D3E 0%, #0A1A0E 60%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -27,7 +39,7 @@ export function Cover({ onEnter }: { onEnter: () => void }) {
           Open My Bag
         </button>
 
-        <div style={{ marginTop: 16, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.2)" }}>HANDICAP 14.2 · 18 ROUNDS</div>
+        <div style={{ marginTop: 16, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.2)", minHeight: 13, whiteSpace: "pre" }}>{statLine}</div>
       </div>
     </DeviceFrame>
   );
