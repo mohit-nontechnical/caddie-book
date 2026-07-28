@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRounds, isCompleteRound, type Round } from "@/lib/caddie-store";
 import { callClaude, MODELS } from "@/lib/openrouter";
 import { golfer } from "@/lib/caddie-data";
+import { resolveStyle } from "@/lib/coach-styles";
 
 function r1(n: number): number {
   return Math.round(n * 10) / 10;
@@ -14,11 +15,13 @@ function r1(n: number): number {
 // counts). No per-hole par is assumed. A "blow-up" hole is score >= 7; the
 // damage-vs-bogey estimate treats 5 (a par-4 bogey) as a clean target.
 //
-// GET /api/debrief            → latest complete round
-// GET /api/debrief?roundId=X  → that round
+// GET /api/debrief                       → latest complete round
+// GET /api/debrief?roundId=X              → that round
+// GET /api/debrief?style=classic|tropicana → voice for coachNote
 export async function GET(req: NextRequest) {
   try {
     const roundId = req.nextUrl.searchParams.get("roundId");
+    const style = resolveStyle(req.nextUrl.searchParams.get("style"));
     const all = await getRounds(300);
 
     const complete = all.filter(isCompleteRound);
@@ -114,7 +117,7 @@ export async function GET(req: NextRequest) {
           bounceBack: bounceback,
           frontVsBack: holeCount >= 18 ? { front9, back9 } : null,
         };
-        const prompt = `You are "Coach", ${golfer.name}'s AI golf caddie (goal: ${golfer.goal}). ${golfer.name} just logged a round. Using ONLY these facts, write a SINGLE punchy, specific, encouraging sentence (max 30 words) about the one thing to take away — focus on damage control / course management / mental game, not technique. No GIR/putts talk (data unreliable).\n\nFACTS:\n${JSON.stringify(facts, null, 2)}\n\nReturn only the sentence, no quotes.`;
+        const prompt = `You are "Coach", ${golfer.name}'s AI golf caddie (goal: ${golfer.goal}). ${golfer.name} just logged a round. Using ONLY these facts, write a SINGLE punchy, specific, encouraging sentence (max 30 words) about the one thing to take away — focus on damage control / course management / mental game, not technique. No GIR/putts talk (data unreliable).\n\nFACTS:\n${JSON.stringify(facts, null, 2)}\n\n${style.voice}\n\nReturn only the sentence, no quotes.`;
         const raw = await callClaude([{ role: "user", content: prompt }], {
           model: MODELS.reasoning,
           maxTokens: 120,

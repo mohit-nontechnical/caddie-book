@@ -3,6 +3,9 @@ import { slots, patterns as seedPatterns, gradeColor, hexA, Slot, Pattern } from
 import { IconSpark } from "./icons";
 import { useGrades } from "./GradesContext";
 import { useLiveGolfer } from "./useLiveGolfer";
+import { useCoachStyle } from "./useCoachStyle";
+import { TrendAlertsList } from "./TrendAlerts";
+import type { TrendAlert } from "@/lib/trends";
 
 const PatternCard = ({ pattern, onOpen, compact }: { pattern: Pattern; onOpen: () => void; compact?: boolean }) => {
   const { gradeFor } = useGrades();
@@ -55,6 +58,8 @@ export const FeedView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) => {
   const [err, setErr] = useState("");
   const [updated, setUpdated] = useState(0);
   const [excludePartial, setExcludePartial] = useState(false);
+  const [style] = useCoachStyle();
+  const [trendAlerts, setTrendAlerts] = useState<TrendAlert[]>([]);
 
   useEffect(() => {
     try {
@@ -62,6 +67,19 @@ export const FeedView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) => {
     } catch {
       /* ignore */
     }
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/trends")
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && Array.isArray(j?.alerts)) setTrendAlerts(j.alerts);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
 
   function toggleExclude() {
@@ -91,7 +109,7 @@ export const FeedView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) => {
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ excludePartial, newPlan: opts?.newPlan === true }),
+        body: JSON.stringify({ excludePartial, newPlan: opts?.newPlan === true, style }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Coach analysis failed");
@@ -166,6 +184,13 @@ export const FeedView = ({ onOpenSlot }: { onOpenSlot: (s: Slot) => void }) => {
           })()}
         </p>
       </div>
+
+      {trendAlerts.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.16em", color: "var(--cream-3)", margin: "0 2px 9px", textTransform: "uppercase" }}>Trends</div>
+          <TrendAlertsList alerts={trendAlerts} />
+        </div>
+      )}
 
       <button onClick={toggleExclude} className="sc-press" style={{ width: "100%", marginBottom: 12, borderRadius: 12, padding: "11px 13px", cursor: "pointer", border: "1px solid var(--line)", background: "var(--panel)", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
         <span style={{ width: 38, height: 22, borderRadius: 999, background: excludePartial ? "var(--gold)" : "rgba(255,255,255,0.12)", position: "relative", flexShrink: 0, transition: "background 0.15s ease" }}>

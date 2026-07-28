@@ -14,6 +14,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { CBCard, CBCardTitle, CBPageHead, CBSegmented, hexA } from "./DesktopUI";
 import { DesktopBarChart, DesktopGauge, DesktopHoleStrip, DesktopLineChart } from "./DesktopCharts";
 import { CBTrend, IconImport, IconSpark } from "./DesktopIcons";
+import { getCoachStyle } from "../useCoachStyle";
 import type {
   DebriefResponse,
   HandicapResponse,
@@ -74,7 +75,7 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({ onOpenRound 
   const handicap = useJson<HandicapResponse>(idxMode === "18" ? "/api/handicap?include9=0" : "/api/handicap?include9=1");
   const rounds = useJson<RoundListItem[]>("/api/rounds");
   const sg = useJson<StrokesGainedResponse>("/api/strokes-gained");
-  const debrief = useJson<DebriefResponse>("/api/debrief");
+  const debrief = useJson<DebriefResponse>(`/api/debrief?style=${encodeURIComponent(getCoachStyle())}`);
   const insights = useJson<InsightsResponse>("/api/insights");
 
   const anyLoading = stats.loading || handicap.loading || rounds.loading;

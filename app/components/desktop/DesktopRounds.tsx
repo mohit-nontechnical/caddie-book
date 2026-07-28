@@ -20,6 +20,7 @@ import { IconArrowL, IconCheck, IconClose, IconFlag, IconImport, IconRounds } fr
 import type { DebriefResponse, HandicapResponse, RoundListItem } from "./types";
 import { CourseVerifyCard } from "../CourseVerifyCard";
 import { useCourseVerify } from "../useCourseVerify";
+import { getCoachStyle } from "../useCoachStyle";
 
 // ── data loading ──────────────────────────────────────────
 interface LoadState<T> {
@@ -399,7 +400,7 @@ interface RoundDetailViewProps {
 
 const RoundDetailView: React.FC<RoundDetailViewProps> = ({ roundId, onBack }) => {
   const rounds = useJson<RoundListItem[]>("/api/rounds");
-  const debrief = useJson<DebriefResponse>(`/api/debrief?roundId=${encodeURIComponent(roundId)}`);
+  const debrief = useJson<DebriefResponse>(`/api/debrief?roundId=${encodeURIComponent(roundId)}&style=${encodeURIComponent(getCoachStyle())}`);
 
   const round = useMemo(() => (rounds.data ?? []).find((r) => r.id === roundId) ?? null, [rounds.data, roundId]);
 

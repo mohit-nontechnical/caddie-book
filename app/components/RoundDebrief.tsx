@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { hexA } from "@/lib/caddie-data";
+import { getCoachStyle } from "./useCoachStyle";
 
 interface DebriefData {
   round: { id: string; course: string; date: string; total: number; holeCount: number; front9: number; back9: number };
@@ -33,7 +34,8 @@ export function RoundDebrief({ roundId, onOpenCoach }: { roundId?: string; onOpe
     let alive = true;
     setLoading(true);
     setErr("");
-    const url = roundId ? `/api/debrief?roundId=${encodeURIComponent(roundId)}` : "/api/debrief";
+    const styleParam = `style=${encodeURIComponent(getCoachStyle())}`;
+    const url = roundId ? `/api/debrief?roundId=${encodeURIComponent(roundId)}&${styleParam}` : `/api/debrief?${styleParam}`;
     fetch(url)
       .then(async (res) => {
         const j = await res.json();

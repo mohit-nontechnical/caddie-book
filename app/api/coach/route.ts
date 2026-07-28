@@ -4,6 +4,7 @@ import { getRounds, saveGrades, isCompleteRound, savePlan, loadPlan } from "@/li
 import type { CoachPlan, Round } from "@/lib/caddie-store";
 import { slots, golfer } from "@/lib/caddie-data";
 import { getLiveHandicap } from "@/lib/live-handicap";
+import { resolveStyle } from "@/lib/coach-styles";
 
 interface CoachOut {
   slotGrades?: { id: string; grade: string }[];
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
     const allRounds = Array.isArray(body?.rounds) && body.rounds.length ? body.rounds : await getRounds(200);
     const excludePartial = body?.excludePartial === true;
     const newPlan = body?.newPlan === true;
+    const style = resolveStyle(body?.style);
 
     // Rounds passed to the model (may exclude partials per toggle)
     const rounds = excludePartial ? allRounds.filter(isCompleteRound) : allRounds;
@@ -125,7 +127,12 @@ Return ONLY valid JSON:
   }
 }
 Focus on the biggest stroke leaks. Be specific and encouraging. 3-5 patterns max.
-The plan MUST target blow-up hole reduction / damage control as the primary lever.`;
+The plan MUST target blow-up hole reduction / damage control as the primary lever.
+
+${style.voice}
+Apply this voice ONLY to prose/user-facing text fields (patterns[].text, weeklyInsight,
+focusDrill.why, focusDrill.drill, plan.focus, plan.actions[]). Field names, JSON structure,
+and slotGrades values (A/B/C/D/F) are UNAFFECTED by voice — never restyle those.`;
 
     const raw = await callClaude([{ role: "user", content: prompt }], {
       model: MODELS.reasoning,

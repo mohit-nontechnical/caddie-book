@@ -3,6 +3,7 @@ import { slots, gradeColor, hexA } from "@/lib/caddie-data";
 import { measureSwing, type PoseSummary } from "@/lib/pose";
 import { Back } from "./primitives";
 import { IconScan, IconSpark, IconTarget } from "./icons";
+import { getCoachStyle } from "./useCoachStyle";
 
 interface SwingResult {
   id?: string; // present only when persisted (demo reads aren't saved)
@@ -250,7 +251,7 @@ export const SwingAnalyzer = ({ onBack }: { onBack: () => void }) => {
       const res = await fetch("/api/analyze-swing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ frames, source, club: club.trim() || undefined, pose: pose ?? undefined }),
+        body: JSON.stringify({ frames, source, club: club.trim() || undefined, pose: pose ?? undefined, style: getCoachStyle() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Analysis failed");

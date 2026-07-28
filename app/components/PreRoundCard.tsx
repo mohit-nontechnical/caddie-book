@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { hexA } from "@/lib/caddie-data";
+import { getCoachStyle } from "./useCoachStyle";
 
 interface RoutineItem {
   icon: string;
@@ -22,7 +23,7 @@ export function PreRoundCard() {
 
   useEffect(() => {
     let alive = true;
-    fetch("/api/preround")
+    fetch(`/api/preround?style=${encodeURIComponent(getCoachStyle())}`)
       .then((r) => r.json())
       .then((j) => {
         if (alive && j && !j.error) setData(j);

@@ -10,6 +10,9 @@
 //   → { reply: string }  (or { error: string } on failure)
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { IconCoach, IconFlag, IconPanel, IconSend } from "./DesktopIcons";
+import { CoachStylePicker } from "../CoachStylePicker";
+import { useCoachStyle } from "../useCoachStyle";
+import type { CoachStyleId } from "@/lib/coach-styles";
 
 interface DisplayMessage {
   role: "user" | "coach";
@@ -33,9 +36,11 @@ interface CoachChatProps {
   busy: boolean;
   onSend: (text: string) => void;
   variant?: "rail" | "page";
+  style?: CoachStyleId;
+  onStyleChange?: (id: CoachStyleId) => void;
 }
 
-export const DesktopCoachChat: React.FC<CoachChatProps> = ({ messages, busy, onSend, variant = "rail" }) => {
+export const DesktopCoachChat: React.FC<CoachChatProps> = ({ messages, busy, onSend, variant = "rail", style, onStyleChange }) => {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const full = variant === "page";
@@ -53,6 +58,13 @@ export const DesktopCoachChat: React.FC<CoachChatProps> = ({ messages, busy, onS
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+      {/* full-page header: voice picker (the rail variant gets its own header
+          in DesktopCoachRail below, so this only renders for variant="page") */}
+      {full && style && onStyleChange && (
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 4px 10px", maxWidth: 720, margin: "0 auto", width: "100%" }}>
+          <CoachStylePicker theme="parchment" value={style} onChange={onStyleChange} />
+        </div>
+      )}
       {/* messages */}
       <div ref={scrollRef} className="cb-scroll" style={{ flex: 1, overflowY: "auto", padding: full ? "8px 4px 4px" : "4px 16px", minHeight: 0 }}>
         <div style={{ maxWidth: full ? 720 : "none", margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -216,9 +228,11 @@ interface CoachRailProps {
   open: boolean;
   onToggle: () => void;
   chat: React.ReactNode;
+  style?: CoachStyleId;
+  onStyleChange?: (id: CoachStyleId) => void;
 }
 
-export const DesktopCoachRail: React.FC<CoachRailProps> = ({ open, onToggle, chat }) => {
+export const DesktopCoachRail: React.FC<CoachRailProps> = ({ open, onToggle, chat, style, onStyleChange }) => {
   if (!open) {
     return (
       <button
@@ -253,14 +267,15 @@ export const DesktopCoachRail: React.FC<CoachRailProps> = ({ open, onToggle, cha
         <span style={{ width: 34, height: 34, borderRadius: 10, background: "var(--ink)", display: "grid", placeItems: "center", flexShrink: 0 }}>
           <IconFlag size={17} stroke="var(--gold)" />
         </span>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 600, color: "#22321f", lineHeight: 1 }}>Your Coach</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: 6, background: "#3E8F63" }} />
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9.5, letterSpacing: "0.08em", color: "rgba(34,49,36,0.55)" }}>ONLINE · READING YOUR STATS</span>
           </div>
         </div>
-        <button onClick={onToggle} title="Collapse" className="cb-icon-btn" style={{ border: "none", background: "transparent", cursor: "pointer", padding: 6, borderRadius: 8 }}>
+        {style && onStyleChange && <CoachStylePicker theme="parchment" value={style} onChange={onStyleChange} />}
+        <button onClick={onToggle} title="Collapse" className="cb-icon-btn" style={{ border: "none", background: "transparent", cursor: "pointer", padding: 6, borderRadius: 8, flexShrink: 0 }}>
           <IconPanel size={18} stroke="rgba(34,49,36,0.5)" />
         </button>
       </div>
@@ -275,6 +290,7 @@ export const DesktopCoachRail: React.FC<CoachRailProps> = ({ open, onToggle, cha
 export function useDesktopCoach() {
   const [messages, setMessages] = useState<DisplayMessage[]>([SEED_MESSAGE]);
   const [busy, setBusy] = useState(false);
+  const [style, setStyle] = useCoachStyle();
 
   const send = useCallback(
     async (text: string) => {
@@ -287,7 +303,7 @@ export function useDesktopCoach() {
         const res = await fetch("/api/coach-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: apiMessages }),
+          body: JSON.stringify({ messages: apiMessages, style }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.error || "Coach couldn't answer");
@@ -299,8 +315,8 @@ export function useDesktopCoach() {
         setBusy(false);
       }
     },
-    [messages]
+    [messages, style]
   );
 
-  return { messages, busy, send };
+  return { messages, busy, send, style, setStyle };
 }

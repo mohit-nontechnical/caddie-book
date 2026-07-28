@@ -27,6 +27,8 @@ import { IconCourses } from "./DesktopIcons";
 import type { HandicapResponse, RoundListItem, StatsResponse, StrokesGainedResponse } from "./types";
 import { geoFor } from "@/lib/course-geo";
 import { normCourse } from "@/lib/course-ratings";
+import { CourseStrategyCard } from "../CourseStrategyCard";
+import { useCoachStyle } from "../useCoachStyle";
 
 // ── data loading (same useJson pattern as DesktopDashboard) ──────────────
 interface LoadState<T> {
@@ -105,6 +107,7 @@ export const DesktopCourses: React.FC = () => {
   const handicap = useJson<HandicapResponse>("/api/handicap");
   const sg = useJson<StrokesGainedResponse>("/api/strokes-gained");
   const rounds = useJson<RoundListItem[]>("/api/rounds");
+  const [coachStyle] = useCoachStyle();
 
   const anyLoading = stats.loading || handicap.loading || sg.loading;
 
@@ -361,6 +364,8 @@ export const DesktopCourses: React.FC = () => {
                 )}
               </CBCard>
             )}
+
+            {selC && <CourseStrategyCard theme="parchment" course={selC.name} style={coachStyle} />}
           </div>
         </div>
       )}

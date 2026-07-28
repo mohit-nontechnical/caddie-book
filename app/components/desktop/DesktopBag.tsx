@@ -16,6 +16,7 @@ import { CBTrend, IconArrowL, IconCheck, IconChevron, IconChevronD, IconClock, I
 import { DesktopLineChart } from "./DesktopCharts";
 import { useGrades } from "../GradesContext";
 import { drills, slots, type Drill, type Section, type Slot } from "@/lib/caddie-data";
+import { getCoachStyle } from "../useCoachStyle";
 
 // ── /api/preround response shape (see app/api/preround/route.ts) ─────────
 interface RoutineItem {
@@ -35,7 +36,7 @@ function usePreRound(): { data: PreRoundData | null; loading: boolean } {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let alive = true;
-    fetch("/api/preround")
+    fetch(`/api/preround?style=${encodeURIComponent(getCoachStyle())}`)
       .then((r) => r.json())
       .then((j) => {
         if (alive) {

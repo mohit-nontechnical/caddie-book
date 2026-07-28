@@ -1,9 +1,10 @@
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getRounds, isCompleteRound, type Round } from "@/lib/caddie-store";
 import { callClaude, MODELS } from "@/lib/openrouter";
 import { golfer } from "@/lib/caddie-data";
+import { resolveStyle } from "@/lib/coach-styles";
 
 function r1(n: number): number {
   return Math.round(n * 10) / 10;
@@ -17,9 +18,10 @@ interface RoutineItem {
 
 // Pre-round mental card: a short "before you tee off" routine, grounded in the
 // player's REAL leaks (slow starts, blow-up rate, tilt). Scoring-data only.
-// GET /api/preround
-export async function GET() {
+// GET /api/preround[?style=classic|tropicana]
+export async function GET(req: NextRequest) {
   try {
+    const style = resolveStyle(req.nextUrl.searchParams.get("style"));
     const all = await getRounds(300);
     const rounds = all.filter(
       (r) => isCompleteRound(r) && (r.stats?.holeCount ?? r.holes.length) >= 18 && r.holes.length >= 18
@@ -131,7 +133,7 @@ export async function GET() {
     try {
       if (process.env.OPENROUTER_API_KEY) {
         const facts = { avg, goalGap, bigHolePct, doublesPerRound, recoveredPct, doubledUpPct, isSlowStarter, tilt };
-        const prompt = `You are "Coach", ${golfer.name}'s golf caddie (goal: ${golfer.goal}). Write ONE short pre-round mantra (max 12 words) ${golfer.name} can repeat on the first tee. Ground it in the dominant leak below — damage control / mental game, never technique. No stat-quoting in the mantra itself; make it punchy and repeatable.\n\nFACTS:\n${JSON.stringify(facts)}\n\nReturn only the mantra, no quotes.`;
+        const prompt = `You are "Coach", ${golfer.name}'s golf caddie (goal: ${golfer.goal}). Write ONE short pre-round mantra (max 12 words) ${golfer.name} can repeat on the first tee. Ground it in the dominant leak below — damage control / mental game, never technique. No stat-quoting in the mantra itself; make it punchy and repeatable.\n\nFACTS:\n${JSON.stringify(facts)}\n\n${style.voice}\n\nReturn only the mantra, no quotes.`;
         const raw = await callClaude([{ role: "user", content: prompt }], {
           model: MODELS.reasoning,
           maxTokens: 40,

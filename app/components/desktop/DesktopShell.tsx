@@ -116,11 +116,20 @@ export function DesktopShell() {
   useDesktopFonts();
   const [route, setRoute] = useState<DesktopRoute>("dashboard");
   const [railOpen, setRailOpen] = useState(true);
-  const { messages, busy, send } = useDesktopCoach();
+  const { messages, busy, send, style, setStyle } = useDesktopCoach();
 
   const goRoute = (r: DesktopRoute) => setRoute(r);
 
-  const chat = <DesktopCoachChat messages={messages} busy={busy} onSend={send} variant={route === "coach" ? "page" : "rail"} />;
+  const chat = (
+    <DesktopCoachChat
+      messages={messages}
+      busy={busy}
+      onSend={send}
+      variant={route === "coach" ? "page" : "rail"}
+      style={style}
+      onStyleChange={setStyle}
+    />
+  );
 
   let content: React.ReactNode;
   if (route === "dashboard") content = <DesktopDashboard onOpenRound={() => goRoute("rounds")} />;
@@ -207,7 +216,9 @@ export function DesktopShell() {
         </main>
 
         {/* coach rail (hidden on the full coach page) */}
-        {!isCoachPage && <DesktopCoachRail open={railOpen} onToggle={() => setRailOpen(!railOpen)} chat={chat} />}
+        {!isCoachPage && (
+          <DesktopCoachRail open={railOpen} onToggle={() => setRailOpen(!railOpen)} chat={chat} style={style} onStyleChange={setStyle} />
+        )}
       </div>
     </div>
   );

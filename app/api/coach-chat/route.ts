@@ -10,6 +10,7 @@ import {
 } from "@/lib/caddie-store";
 import { callClaude, MODELS, type ChatMessage } from "@/lib/openrouter";
 import { golfer } from "@/lib/caddie-data";
+import { resolveStyle } from "@/lib/coach-styles";
 
 function r1(n: number): number {
   return Math.round(n * 10) / 10;
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest) {
 
     const [all, swings] = await Promise.all([getRounds(300), getSwingAnalyses(8)]);
     const context = buildContext(all, swings);
+    const style = resolveStyle(body?.style);
 
     const system = `You are "Coach", ${golfer.name}'s personal AI golf caddie. Goal: ${golfer.goal}.
 
@@ -142,7 +144,9 @@ You answer questions using ONLY the player's real data below. Rules:
 - When asked about a specific course, use perCourse. When asked "why" something happens, reason from blow-up rate, tilt, and front/back splits.
 
 PLAYER DATA (the only source of truth):
-${context}`;
+${context}
+
+${style.voice}`;
 
     const messages: ChatMessage[] = [
       { role: "system", content: system },

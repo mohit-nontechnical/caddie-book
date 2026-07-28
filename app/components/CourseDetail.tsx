@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { hexA } from "@/lib/caddie-data";
 import { Back, SLabel } from "./primitives";
 import { RoundsView } from "./RoundsView";
+import { CourseStrategyCard } from "./CourseStrategyCard";
+import { useCoachStyle } from "./useCoachStyle";
 import type { RoundSummary } from "./types";
 
 interface Props {
@@ -15,6 +17,7 @@ interface Props {
 export const CourseDetail = ({ course, onBack, onOpenRound }: Props) => {
   const [rounds, setRounds] = useState<RoundSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [style] = useCoachStyle();
 
   useEffect(() => {
     fetch("/api/rounds")
@@ -73,6 +76,8 @@ export const CourseDetail = ({ course, onBack, onOpenRound }: Props) => {
             ))}
           </div>
         </div>
+
+        <CourseStrategyCard theme="dark" course={course} style={style} />
       </div>
 
       {/* Rounds at this course */}

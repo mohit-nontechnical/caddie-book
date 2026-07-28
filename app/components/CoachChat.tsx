@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { hexA } from "@/lib/caddie-data";
+import { useCoachStyle } from "./useCoachStyle";
+import { CoachStylePicker } from "./CoachStylePicker";
 
 interface Msg {
   role: "user" | "assistant";
@@ -21,6 +23,7 @@ export function CoachChat({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [style, setStyle] = useCoachStyle();
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -38,7 +41,7 @@ export function CoachChat({ onBack }: { onBack: () => void }) {
       const res = await fetch("/api/coach-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, style }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Coach couldn't answer");
@@ -55,10 +58,11 @@ export function CoachChat({ onBack }: { onBack: () => void }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "2px 16px 14px" }}>
         <button onClick={onBack} className="sc-press" style={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 999, width: 34, height: 34, cursor: "pointer", color: "var(--cream)", fontSize: 17, display: "grid", placeItems: "center", flexShrink: 0 }}>‹</button>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: "0.2em", color: "var(--gold)", textTransform: "uppercase" }}>Ask Coach</div>
           <h1 style={{ margin: "2px 0 0", fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, color: "var(--cream)", letterSpacing: "-0.015em" }}>Your rounds, answered</h1>
         </div>
+        <CoachStylePicker theme="dark" value={style} onChange={setStyle} />
       </div>
 
       {/* Messages */}

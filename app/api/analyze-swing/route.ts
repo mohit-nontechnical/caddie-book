@@ -6,6 +6,7 @@ import {
   deleteSwingAnalysis,
   type SwingAnalysis,
 } from "@/lib/caddie-store";
+import { resolveStyle } from "@/lib/coach-styles";
 
 export const runtime = "nodejs";
 
@@ -63,10 +64,11 @@ export async function DELETE(req: NextRequest) {
 // → SwingAnalysis (persisted — Coach remembers it)
 export async function POST(req: NextRequest) {
   try {
-    const { frames, club, context, source, pose } = await req.json();
+    const { frames, club, context, source, pose, style: styleRaw } = await req.json();
     if (!Array.isArray(frames) || frames.length === 0) {
       return NextResponse.json({ error: "Missing 'frames' (array of base64 data URLs)" }, { status: 400 });
     }
+    const style = resolveStyle(styleRaw);
     const images = (frames as string[])
       .slice(0, MAX_FRAMES)
       .map((f) => (f.startsWith("data:") ? f : `data:image/jpeg;base64,${f}`));
@@ -113,7 +115,12 @@ Return ONLY valid JSON:
   "bagSlotAffected": "driver"|"woods"|"hybrid"|"midiron"|"shortiron"|"wedge"|"approach"|"chip"|"bunker"|"putting"|"mgmt"|"zones"|"pressure"|"consist",
   "confidence": "low"|"medium"|"high",
   "trend": string|null              // ONLY if prior reads exist: 1 sentence on recurrence/progress vs them, else null
-}`;
+}
+
+${style.voice}
+Apply this voice ONLY to the prose fields (observation, drillRecommendation, trend).
+bagSlotAffected and confidence MUST stay exactly one of the listed enum values — never
+restyle or rephrase those.`;
 
     const raw = await callClaude([visionMessage(prompt, images)], {
       model: MODELS.vision,

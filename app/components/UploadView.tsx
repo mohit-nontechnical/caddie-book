@@ -5,6 +5,8 @@ import { SwingAnalyzer } from "./SwingAnalyzer";
 import { RoundDebrief } from "./RoundDebrief";
 import { CourseVerifyCard } from "./CourseVerifyCard";
 import { useCourseVerify } from "./useCourseVerify";
+import { TrendAlertsList } from "./TrendAlerts";
+import type { TrendAlert } from "@/lib/trends";
 
 const ScorecardSkeleton = () => (
   <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -60,6 +62,7 @@ export const UploadView = ({ onParsed, onOpenInsights }: { onParsed: () => void;
   const [recent, setRecent] = useState<RecentRound[] | null>(null);
   const [showDebrief, setShowDebrief] = useState(false);
   const [debriefKey, setDebriefKey] = useState(0);
+  const [trendAlerts, setTrendAlerts] = useState<TrendAlert[]>([]);
   const courseVerify = useCourseVerify();
 
   const steps = ["Reading scorecard…", "Parsing 18 holes…", "Matching fairways & GIR…", "Updating bag grades…"];
@@ -150,6 +153,16 @@ export const UploadView = ({ onParsed, onOpenInsights }: { onParsed: () => void;
         // courses this import touched. A USGA outage here never affects the
         // import result already shown above.
         courseVerify.start(courseNames ?? []);
+        // Non-blocking, zero-AI-cost: surface any deterministic trend shifts
+        // now that fresh rounds are in. Never blocks the import result.
+        fetch("/api/trends")
+          .then((r) => r.json())
+          .then((j) => {
+            if (Array.isArray(j?.alerts)) setTrendAlerts(j.alerts);
+          })
+          .catch(() => {});
+      } else {
+        setTrendAlerts([]);
       }
       loadRecent();
     } catch (e) {
@@ -228,6 +241,13 @@ export const UploadView = ({ onParsed, onOpenInsights }: { onParsed: () => void;
           )}
           {importErr && (
             <div style={{ marginTop: 12, borderRadius: 12, border: "1px solid " + hexA("#C05C5C", 0.4), background: hexA("#C05C5C", 0.08), padding: "12px 14px", fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--cream-2)" }}>{importErr}</div>
+          )}
+
+          {trendAlerts.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.16em", color: "var(--cream-3)", margin: "0 2px 9px", textTransform: "uppercase" }}>Trends</div>
+              <TrendAlertsList alerts={trendAlerts} />
+            </div>
           )}
 
           {showDebrief && (
